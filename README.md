@@ -136,19 +136,3 @@ python scripts/eval_caption.py   --coco-images ./data/coco/images/val2017   --co
 | Plane | "A plane flying in the sky with a trail of white smoke." | "An airplane leaving a white trail in the blue sky." |
 
 ---
-
-## Citation
-
-```bibtex
-@software{ossight2025,
-  author = {Your Name},
-  title  = {OSSight: Minimal Multimodal Vision–Language Prototype},
-  year   = {2025},
-  url    = {https://github.com/yourusername/ossight}
-}
-```
-
----
-
-## License
-MIT License – see [LICENSE](LICENSE) for details.
