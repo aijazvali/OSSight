@@ -1,0 +1,12 @@
+torch>=2.2
+torchvision
+transformers>=4.43.3
+accelerate>=0.33.0
+bitsandbytes>=0.43.0
+peft>=0.12.0
+datasets>=2.20.0
+einops>=0.7.0
+tqdm
+pillow
+scikit-image
+pyyaml

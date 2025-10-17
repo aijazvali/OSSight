@@ -1,0 +1,21 @@
+vision_model_name: google/siglip-so400m-patch14-384
+vision_fallback_name: google/siglip-base-patch16-384
+llm_model_name: Qwen/Qwen2.5-1.5B-Instruct
+
+load_4bit: true
+
+proj_mlp_hidden: 4096
+fusion_heads: 8
+max_vision_tokens: 256
+init_gate: -2.0
+
+batch_size: 4
+seed: 42
+lr: 3e-5
+weight_decay: 0.01
+warmup_steps: 100
+grad_accum: 4
+train_steps: 1200
+log_every: 20
+ckpt_every: 300
+alpha_align: 0.1
