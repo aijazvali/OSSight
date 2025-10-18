@@ -1,4 +1,4 @@
-import os, argparse, yaml, math, sys
+import argparse, sys
 from pathlib import Path
 from typing import Optional
 import torch
@@ -26,6 +26,15 @@ def resolve_path(path_str: Optional[str], *, allow_none: bool = False) -> Option
         return path
     return PROJECT_ROOT / path
 
+
+def ensure_path_exists(path: Path, *, description: str, expect_dir: bool) -> None:
+    if expect_dir:
+        if not path.is_dir():
+            raise FileNotFoundError(f"{description} directory not found: {path}")
+    else:
+        if not path.is_file():
+            raise FileNotFoundError(f"{description} file not found: {path}")
+
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--coco-images", type=str, required=True)
@@ -50,11 +59,23 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.batch_size <= 0:
+        raise ValueError(f"--batch-size must be positive, got {args.batch_size}")
+    if args.grad_accum <= 0:
+        raise ValueError(f"--grad-accum must be positive, got {args.grad_accum}")
+    if args.steps <= 0:
+        raise ValueError(f"--steps must be positive, got {args.steps}")
+
     set_seed(args.seed)
     coco_images = resolve_path(args.coco_images)
     coco_captions = resolve_path(args.coco_captions)
+    ensure_path_exists(coco_images, description="COCO image root", expect_dir=True)
+    ensure_path_exists(coco_captions, description="COCO captions", expect_dir=False)
+
     out_dir = resolve_path(args.out)
     cache_dir = resolve_path(args.hf_cache, allow_none=True) if args.hf_cache else None
+    if cache_dir is not None:
+        cache_dir.mkdir(parents=True, exist_ok=True)
 
     ensure_dir(str(out_dir))
     dev = device()
@@ -88,7 +109,7 @@ def main():
         return args.lr * (step + 1) / max(1, args.warmup) if step < args.warmup else args.lr
 
     steps = args.steps
-    grad_acc = args.grad_acc
+    grad_acc = args.grad_accum
     log_every = 20
     ckpt_every = 300
     alpha = args.alpha_align
