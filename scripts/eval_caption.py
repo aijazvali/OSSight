@@ -1,7 +1,12 @@
-import os, argparse, random, json
+import os, argparse, random, json, sys
+from pathlib import Path
 from PIL import Image
 from tqdm.auto import tqdm
 import torch
+
+SRC_ROOT = Path(__file__).resolve().parents[1] / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 
 from ossight.data import COCODataset
 from ossight.model import load_models, VisionLLM
