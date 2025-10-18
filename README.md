@@ -23,7 +23,7 @@ The project demonstrates a practical pipeline for aligning image and text embedd
 ## Installation
 
 ```bash
-git clone <your-repo-url> ossight
+git clone https://github.com/aijazvali/OSSight ossight
 cd ossight
 python -m venv .venv && source .venv/bin/activate        # On Windows: .venv\Scripts\activate
 pip install --upgrade pip
