@@ -1,0 +1,48 @@
+1)
+#Clone and install dependencies
+  
+code:-
+!git clone https://github.com/aijazvali/OSSight ossight
+%cd ossight
+!pip install --upgrade pip
+!pip install -r requirements.txt
+
+
+  
+2)
+#Download COCO data into the Colab filesystem
+#For quick tests grab val2017; for longer training sessions, pull train2017
+  
+code:-
+!python scripts/download_coco.py --root ./data --split val2017
+# or
+!python scripts/download_coco.py --root ./data --split train2017
+
+
+
+3)
+#training adapter-fusion layers (stage s0)
+
+code:-
+!python scripts/train_s0.py \
+    --coco-images ./data/coco/images/val2017 \
+    --coco-captions ./data/coco/annotations/captions_val2017.json \
+    --out ./checkpoints \
+    --steps 1200 \
+    --batch-size 4 \
+    --grad-accum 4 \
+    --lr 3e-5 \
+    --alpha-align 0.1
+
+
+  
+4)
+#sample predictions
+
+code:-
+!python scripts/eval_caption.py \
+--coco-images ./data/coco/images/val2017 \
+--coco-captions ./data/coco/annotations/captions_val2017.json \
+--ckpt ./checkpoints/adapter_fusion_step1200.pt \
+--samples 8
+
