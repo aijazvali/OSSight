@@ -1,5 +1,10 @@
-import os, argparse, yaml, math
+import os, argparse, yaml, math, sys
+from pathlib import Path
 import torch
+
+SRC_ROOT = Path(__file__).resolve().parents[1] / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 from torch.optim import AdamW
 from torch.nn.utils import clip_grad_norm_
 from tqdm.auto import tqdm
@@ -61,6 +66,7 @@ def main():
     optimizer = AdamW(params, lr=args.lr, weight_decay=args.weight_decay)
 
     def lr_schedule(step):
+        """Linear warmup on optimizer steps (not forward passes)."""
         return args.lr * (step + 1) / max(1, args.warmup) if step < args.warmup else args.lr
 
     steps = args.steps
@@ -71,6 +77,7 @@ def main():
 
     wrapper.train()
     global_step = 0
+    optimizer_step = 0
     run_ce = run_al = 0.0
     pbar = tqdm(total=steps, desc="Training S0 (COCO captions)")
 
@@ -98,10 +105,11 @@ def main():
         (loss / grad_acc).backward()
         if (global_step + 1) % grad_acc == 0:
             for g in optimizer.param_groups:
-                g["lr"] = lr_schedule(global_step)
+                g["lr"] = lr_schedule(optimizer_step)
             clip_grad_norm_(params, 1.0)
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
+            optimizer_step += 1
 
         run_ce += float(loss_ce.detach())
         run_al += float(align.detach())
@@ -115,7 +123,9 @@ def main():
             torch.save({
                 "adapter": wrapper.adapter.state_dict(),
                 "fusion":  wrapper.fusion.state_dict(),
+                "optimizer": optimizer.state_dict(),
                 "step": global_step+1,
+                "optimizer_step": optimizer_step,
                 "cfg": cfg
             }, ckpt)
             print(f"Saved checkpoint: {ckpt}")
