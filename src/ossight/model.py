@@ -134,8 +134,22 @@ class VisionLLM(nn.Module):
         return out.loss, text_fp32, vis_fp32
 
     @torch.no_grad()
-    def generate(self, pils: list, prompt: str, max_new_tokens: int = 48):
+    def generate(self, pils: list, prompt: str, max_new_tokens: int = 48, generation_kwargs: Dict[str, Any] = None):
+        """Run inference with optional sampling controls.
+
+        Args:
+            pils: List of PIL images to describe.
+            prompt: Prompt string used for conditioning the LLM.
+            max_new_tokens: Maximum number of tokens to decode if not overridden in
+                ``generation_kwargs``.
+            generation_kwargs: Optional dictionary passed directly to
+                ``self.llm.generate`` allowing control over sampling behaviour.
+        """
+
+        self.eval()
         self.llm.eval()
+        self.vision.eval()
+
         enc = self.tok(prompt, return_tensors="pt", padding=False)
         ids  = enc["input_ids"].to(self.device)
         attn = enc["attention_mask"].to(self.device)
@@ -145,16 +159,22 @@ class VisionLLM(nn.Module):
         fused_fp32= self.fuse(text_fp32, vis_fp32)
         fused     = fused_fp32.to(next(self.llm.parameters()).dtype)
 
-        # Greedy decode is more stable and predictable
-        gen_ids = self.llm.generate(
-            inputs_embeds=fused,
-            attention_mask=attn,
-            max_new_tokens=max_new_tokens,
-            do_sample=False,
-            pad_token_id=self.tok.pad_token_id,
-            eos_token_id=self.tok.eos_token_id
-        )
-        return self.tok.decode(gen_ids[0], skip_special_tokens=True)
+        gen_kwargs = dict(generation_kwargs or {})
+        gen_kwargs.setdefault("max_new_tokens", max_new_tokens)
+        gen_kwargs.setdefault("do_sample", False)
+        if "pad_token_id" not in gen_kwargs and self.tok.pad_token_id is not None:
+            gen_kwargs["pad_token_id"] = self.tok.pad_token_id
+        if "eos_token_id" not in gen_kwargs and self.tok.eos_token_id is not None:
+            gen_kwargs["eos_token_id"] = self.tok.eos_token_id
+
+        gen_ids = self.llm.generate(inputs_embeds=fused, attention_mask=attn, **gen_kwargs)
+
+        prompt_len = ids.shape[-1]
+        output_ids = gen_ids[0]
+        new_ids = output_ids[prompt_len:]
+        if new_ids.numel() == 0:
+            new_ids = output_ids
+        return self.tok.decode(new_ids, skip_special_tokens=True).strip()
 
 def load_models(vision_name: str, vision_fallback: str, llm_name: str, load_4bit: bool = True, cache_dir: str = None):
     # LLM in 4-bit

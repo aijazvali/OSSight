@@ -10,3 +10,4 @@ tqdm
 pillow
 scikit-image
 pyyaml
+gradio>=4.36.1
