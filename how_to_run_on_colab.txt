@@ -32,8 +32,8 @@ code:-
     --batch-size 4 \
     --grad-accum 4 \
     --lr 3e-5 \
-    --alpha-align 0.1
-
+    --alpha-align 0.1 \
+    --hf-cache /content/hf-cache
 
   
 4)
@@ -41,8 +41,22 @@ code:-
 
 code:-
 !python scripts/eval_caption.py \
---coco-images ./data/coco/images/val2017 \
---coco-captions ./data/coco/annotations/captions_val2017.json \
---ckpt ./checkpoints/adapter_fusion_step1200.pt \
---samples 8
+    --coco-images ./data/coco/images/val2017 \
+    --coco-captions ./data/coco/annotations/captions_val2017.json \
+    --ckpt ./checkpoints/adapter_fusion_step1200.pt \
+    --samples 8 \
+    --query "Answer like an a professional man." \
+    --max-new-tokens 64
+
+
+
+5)
+#Launch the Gradio demo (optional)
+
+code:-
+!python scripts/gradio_app.py \
+    --ckpt ./checkpoints/adapter_fusion_step1200.pt \
+    --hf-cache /content/hf-cache \
+    --share
+
 
